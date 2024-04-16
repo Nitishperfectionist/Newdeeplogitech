@@ -2,17 +2,15 @@ async function fetchLatestStories() {
     try {
         const response = await fetch('/latest-stories')
         const data = await response.json();
-        const storiesList = document.getElementById('storiesList');
+        const storiesList = document.getElementById('list');
 
-        data.forEach((story, index) => {
+        data.forEach((story, i) => {
             const listItem = document.createElement('li');
-            listItem.textContent = `${index + 1}. ${story}`;
+            listItem.textContent = `${i + 1}. ${story}`;
             storiesList.appendChild(listItem);
         });
     } catch (error) {
-        console.error('Error fetching latest stories:', error);
+        console.error('Error latest stories:', error);
     }
 }
-
-// Fetch latest stories when the page loads
 fetchLatestStories();

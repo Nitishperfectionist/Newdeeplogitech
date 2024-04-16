@@ -2,15 +2,18 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 
-// Function to make a GET request to Time.com
-function fetchHTML(url) {
+// Function to make a GET request to a given URL
+async function fetchHTML(url) {
+    const protocolHandler = url.startsWith('https') ? https : http;
+
     return new Promise((resolve, reject) => {
-        const protocolHandler = url.startsWith('https') ? https : http;
         protocolHandler.get(url, (res) => {
             let data = '';
+
             res.on('data', (chunk) => {
                 data += chunk;
             });
+
             res.on('end', () => {
                 resolve(data);
             });
@@ -39,12 +42,13 @@ const server = http.createServer(async (req, res) => {
         try {
             const html = await fetchHTML('https://time.com');
             const latestStories = extractLatestStories(html);
+
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(latestStories));
         } catch (error) {
+            console.error('Error fetching or parsing HTML:', error);
             res.writeHead(500, { 'Content-Type': 'text/plain' });
             res.end('Error fetching or parsing HTML');
-            console.error('Error fetching or parsing HTML:', error);
         }
     } else {
         res.writeHead(200, { 'Content-Type': 'text/html' });
