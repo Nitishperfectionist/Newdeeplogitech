@@ -3,7 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
 
-// Function to make a GET request to a given URL async
+
 function fetchHTML(url) {
     const protocolHandler = url.startsWith('https') ? https : http;
     return new Promise((resolve, reject) => {
@@ -15,8 +15,8 @@ function fetchHTML(url) {
             res.on('end', () => {
                 resolve(data);
             });
-        }).on('error', (err) => {
-            reject(err);
+        }).on('error', (error) => {
+            reject(error);
         });
     });
 }
@@ -29,7 +29,7 @@ function extractLatestStories(html) {
     headlineElements.forEach((element) => {
         latestStories.push(element.textContent.trim());
     });
-    return latestStories.slice(0, 6); // Limit to 6 latest stories
+    return latestStories.slice(0, 6); 
 }
 
 // Create a simple Node.js server
