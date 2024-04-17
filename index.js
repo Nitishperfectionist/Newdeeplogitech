@@ -1,19 +1,17 @@
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
+const { JSDOM } = require('jsdom');
 
-// Function to make a GET request to a given URL
-async function fetchHTML(url) {
+// Function to make a GET request to a given URL async
+function fetchHTML(url) {
     const protocolHandler = url.startsWith('https') ? https : http;
-
     return new Promise((resolve, reject) => {
         protocolHandler.get(url, (res) => {
             let data = '';
-
             res.on('data', (chunk) => {
                 data += chunk;
             });
-
             res.on('end', () => {
                 resolve(data);
             });
@@ -23,17 +21,15 @@ async function fetchHTML(url) {
     });
 }
 
-// Function to extract the latest stories from the HTML content
+// Function to extract the latest stories from the HTML content using jsdom
 function extractLatestStories(html) {
-    const headlinePattern = /<h3 class="headline">(.*?)<\/h3>/g;
+    const { document } = new JSDOM(html).window;
     const latestStories = [];
-    let match;
-
-    while ((match = headlinePattern.exec(html)) !== null && latestStories.length < 6) {
-        latestStories.push(match[1].trim());
-    }
-
-    return latestStories;
+    const headlineElements = document.querySelectorAll('.headline');
+    headlineElements.forEach((element) => {
+        latestStories.push(element.textContent.trim());
+    });
+    return latestStories.slice(0, 6); // Limit to 6 latest stories
 }
 
 // Create a simple Node.js server
