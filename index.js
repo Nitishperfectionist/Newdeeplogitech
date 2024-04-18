@@ -1,35 +1,46 @@
+
 const http = require('http');
 const https = require('https');
 const fs = require('fs');
-const { JSDOM } = require('jsdom');
 
-
-function fetchHTML(url) {
+// Function to make a GET request to a given URL
+async function fetchHTML(url) {
     const protocolHandler = url.startsWith('https') ? https : http;
+
     return new Promise((resolve, reject) => {
         protocolHandler.get(url, (res) => {
             let data = '';
+
             res.on('data', (chunk) => {
                 data += chunk;
             });
+
             res.on('end', () => {
                 resolve(data);
             });
-        }).on('error', (error) => {
-            reject(error);
+        }).on('error', (err) => {
+            reject(err);
         });
     });
 }
 
-// Function to extract the latest stories from the HTML content using jsdom
+// Function to extract the latest stories from the HTML content
 function extractLatestStories(html) {
-    const { document } = new JSDOM(html).window;
     const latestStories = [];
-    const headlineElements = document.querySelectorAll('.headline');
-    headlineElements.forEach((element) => {
-        latestStories.push(element.textContent.trim());
-    });
-    return latestStories.slice(0, 6); 
+    let startIndex = html.indexOf('<h3 class="headline">');
+
+    while (startIndex !== -1 && latestStories.length < 6) {
+        const endIndex = html.indexOf('</h3>', startIndex);
+        if (endIndex !== -1) {
+            const story = html.substring(startIndex + 22, endIndex).trim(); // 22 is the length of '<h3 class="headline">'
+            latestStories.push(story);
+            startIndex = html.indexOf('<h3 class="headline">', endIndex);
+        } else {
+            break;
+        }
+    }
+
+    return latestStories;
 }
 
 // Create a simple Node.js server
