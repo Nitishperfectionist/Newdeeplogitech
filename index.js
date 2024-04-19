@@ -1,69 +1,62 @@
 
+const https = require("https");
+
+const resultarray = [];
+
+const url = "https://time.com/";
+
+https.get(url, (res) => {
+  let body = '';
+
+  res.on('data', (datarecieve) => {
+    body += datarecieve;
+  });
+
+  res.on('end', () => {
+    processHtmlData(body);
+  });
+}).on('error', (err) => {
+  console.error("Error making HTTP request:", err);
+});
+
+function escapeBackslashes(input) {
+  return input.replace(/\\(.)/g, '\\');
+}
+// this Function will escape the Backlashes 
+//before any character for example if the input is "http://ab\\\cdef.com"; 
+//the output after running the function is http://ab\cdef.com
+
+function processHtmlData(htmlContent) {
+
+  const data_required = htmlContent.split('<li class="latest-stories__item">');
+
+  for (let i = 1; i <= 6; i++) {
+    const answer_part = data_required[i];
+    const data_part = answer_part.split(/(?<!\\)"/);
+    const link = "https://time.com" + data_part[1];// Extract link 
+    const title = data_part[4].split(/(?<!\\)>/)[1].split(/(?<!\\)<\/h3/)[0]; // Extract title 
+    escapeBackslashes(link);
+    escapeBackslashes(title);
+    resultarray.push({ title, link });
+  }
+}
+
+// Creating a server 
 const http = require('http');
-const https = require('https');
-const fs = require('fs');
 
-// Function to make a GET request to a given URL
-async function fetchHTML(url) {
-    const protocolHandler = url.startsWith('https') ? https : http;
+http.createServer(function (req, res) {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  const url = req.url;
+  if (url === '/getTimeStories') {
+    res.write(JSON.stringify(resultarray));
+    res.end();
+  }
+}).listen(8000, function () {
+    console.log("server listening at port 8000");
+  });
+  
 
-    return new Promise((resolve, reject) => {
-        protocolHandler.get(url, (res) => {
-            let data = '';
 
-            res.on('data', (chunk) => {
-                data += chunk;
-            });
 
-            res.on('end', () => {
-                resolve(data);
-            });
-        }).on('error', (err) => {
-            reject(err);
-        });
-    });
-}
 
-// Function to extract the latest stories from the HTML content
-function extractLatestStories(html) {
-    const latestStories = [];
-    let startIndex = html.indexOf('<h3 class="headline">');
 
-    while (startIndex !== -1 && latestStories.length < 6) {
-        const endIndex = html.indexOf('</h3>', startIndex);
-        if (endIndex !== -1) {
-            const story = html.substring(startIndex + 22, endIndex).trim(); // 22 is the length of '<h3 class="headline">'
-            latestStories.push(story);
-            startIndex = html.indexOf('<h3 class="headline">', endIndex);
-        } else {
-            break;
-        }
-    }
-
-    return latestStories;
-}
-
-// Create a simple Node.js server
-const server = http.createServer(async (req, res) => {
-    if (req.url === '/latest-stories') {
-        try {
-            const html = await fetchHTML('https://time.com');
-            const latestStories = extractLatestStories(html);
-
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(latestStories));
-        } catch (error) {
-            console.error('Error fetching or parsing HTML:', error);
-            res.writeHead(500, { 'Content-Type': 'text/plain' });
-            res.end('Error fetching or parsing HTML');
-        }
-    } else {
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        fs.createReadStream('./index.html').pipe(res);
-    }
-});
-
-const PORT = 5050;
-server.listen(PORT, () => {
-    console.log(`Server running on port http://localhost:${PORT}`);
-});
